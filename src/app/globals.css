@@ -1,49 +1,77 @@
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@import "tailwindcss";
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+@theme {
+  --color-magenta-bloom-50: #fbe9ef;
+  --color-magenta-bloom-100: #f8d3df;
+  --color-magenta-bloom-200: #f0a8c0;
+  --color-magenta-bloom-300: #e97ca0;
+  --color-magenta-bloom-400: #e15181;
+  --color-magenta-bloom-500: #da2561;
+  --color-magenta-bloom-600: #ae1e4e;
+  --color-magenta-bloom-700: #83163a;
+  --color-magenta-bloom-800: #570f27;
+  --color-magenta-bloom-900: #2c0713;
+  --color-magenta-bloom-950: #1f050e;
 
-html {
-  height: 100%;
+  --color-yellow-green-50: #f6fbea;
+  --color-yellow-green-100: #edf7d4;
+  --color-yellow-green-200: #dbefa9;
+  --color-yellow-green-300: #c9e77e;
+  --color-yellow-green-400: #b7de54;
+  --color-yellow-green-500: #a5d629;
+  --color-yellow-green-600: #84ab21;
+  --color-yellow-green-700: #638118;
+  --color-yellow-green-800: #425610;
+  --color-yellow-green-900: #212b08;
+  --color-yellow-green-950: #171e06;
+
+  --color-neon-ice-50: #e7fdfd;
+  --color-neon-ice-100: #d0fbfb;
+  --color-neon-ice-200: #a0f8f8;
+  --color-neon-ice-300: #71f4f4;
+  --color-neon-ice-400: #41f1f1;
+  --color-neon-ice-500: #12eded;
+  --color-neon-ice-600: #0ebebe;
+  --color-neon-ice-700: #0b8e8e;
+  --color-neon-ice-800: #075f5f;
+  --color-neon-ice-900: #042f2f;
+  --color-neon-ice-950: #022121;
+
+  --color-icy-blue-50: #e6f6fe;
+  --color-icy-blue-100: #ceedfd;
+  --color-icy-blue-200: #9cdcfc;
+  --color-icy-blue-300: #6bcafa;
+  --color-icy-blue-400: #39b9f9;
+  --color-icy-blue-500: #08a7f7;
+  --color-icy-blue-600: #0686c6;
+  --color-icy-blue-700: #056494;
+  --color-icy-blue-800: #034363;
+  --color-icy-blue-900: #022131;
+  --color-icy-blue-950: #011723;
+
+  --color-lilac-50: #f6eef3;
+  --color-lilac-100: #eddee7;
+  --color-lilac-200: #dbbdd0;
+  --color-lilac-300: #c99cb8;
+  --color-lilac-400: #b87aa0;
+  --color-lilac-500: #a65988;
+  --color-lilac-600: #85476d;
+  --color-lilac-700: #633652;
+  --color-lilac-800: #422437;
+  --color-lilac-900: #21121b;
+  --color-lilac-950: #170c13;
 }
 
 html,
 body {
-  max-width: 100vw;
-  overflow-x: hidden;
+  height: 100%;
 }
 
 body {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  background: var(--color-icy-blue-950);
+  color: var(--color-neon-ice-50);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
-}
-
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+  overflow-x: hidden;
 }
