@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { motion, type Variants } from "motion/react";
+import { MiniHockeyModal } from "./MiniHockeyModal";
+import { LeaderboardModal } from "./LeaderboardModal";
 
 type Word = {
   text: string;
@@ -38,7 +41,7 @@ type WordCustom = { side: 1 | -1; rotate: number };
 const wordVariant: Variants = {
   hidden: (c: WordCustom) => ({
     opacity: 0,
-    x: 120 * c.side,
+    x: 70 * c.side,
     y: -40,
     rotate: 0,
     scale: 0.55,
@@ -60,6 +63,16 @@ const sticker: Variants = {
     scale: 1,
     rotate: -8,
     transition: { type: "spring", stiffness: 260, damping: 10, delay: 1.2 },
+  },
+};
+
+const stickerLeft: Variants = {
+  hidden: { opacity: 0, scale: 0, rotate: -60 },
+  shown: {
+    opacity: 1,
+    scale: 1,
+    rotate: 6,
+    transition: { type: "spring", stiffness: 260, damping: 10, delay: 1.35 },
   },
 };
 
@@ -98,7 +111,7 @@ function WordRow({
   offset: number;
 }) {
   return (
-    <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 md:gap-x-6">
+    <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 md:gap-x-10 lg:gap-x-12">
       {words.map((w, i) => {
         const globalIndex = offset + i;
         return (
@@ -124,14 +137,16 @@ function WordRow({
 }
 
 export function KnowTheRules() {
+  const [gameOpen, setGameOpen] = useState(false);
+  const [boardOpen, setBoardOpen] = useState(false);
   return (
-    <section className="relative overflow-hidden py-12 md:py-16">
+    <section className="relative pt-2 pb-2 md:pt-3 md:pb-2">
       <motion.div
         initial="hidden"
         whileInView="shown"
-        viewport={{ once: true, amount: 0.4 }}
+        viewport={{ once: false, amount: 0.4 }}
         variants={container}
-        className="relative mx-auto max-w-4xl px-6"
+        className="relative mx-auto max-w-6xl px-6"
       >
         {sparkles.map((s, i) => (
           <motion.div
@@ -144,7 +159,7 @@ export function KnowTheRules() {
               rotate: 180,
               opacity: 1,
             }}
-            viewport={{ once: true, amount: 0.4 }}
+            viewport={{ once: false, amount: 0.4 }}
             transition={{ duration: 0.6, delay: s.delay, ease: "backOut" }}
           >
             <Sparkle color={s.color} size={s.size} />
@@ -183,20 +198,92 @@ export function KnowTheRules() {
           </svg>
         </motion.div>
 
-        <div className="relative flex flex-col items-center gap-2 md:gap-3">
+        <div className="relative flex flex-col items-center gap-1 md:gap-1.5">
           <WordRow words={row1} offset={0} />
           <WordRow words={row2} offset={row1.length} />
         </div>
 
         <motion.div
-          variants={sticker}
-          className="pointer-events-none absolute right-2 -bottom-4 md:right-6 md:-bottom-2"
+          variants={stickerLeft}
+          className="absolute left-2 -bottom-8 md:left-6 md:-bottom-6"
         >
-          <div className="rounded-full border-4 border-magenta-bloom-900 bg-yellow-green-400 px-4 py-2 text-lg md:text-xl font-black uppercase tracking-tight text-magenta-bloom-900 shadow-[5px_5px_0_0_var(--color-magenta-bloom-900)]">
+          <motion.button
+            type="button"
+            onClick={() => setBoardOpen(true)}
+            aria-label="View leaderboard"
+            animate={{
+              rotate: [0, -3, 0, -3, 0],
+              scale: [1, 1.06, 1, 1.06, 1],
+            }}
+            transition={{
+              duration: 2.2,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 2.1,
+            }}
+            className="relative inline-flex cursor-pointer items-center gap-2 rounded-full border-4 border-magenta-bloom-900 bg-neon-ice-400 px-5 py-2 text-lg md:text-xl font-black uppercase tracking-tight text-magenta-bloom-900 shadow-[5px_5px_0_0_var(--color-magenta-bloom-900)] transition-transform hover:scale-110 hover:bg-neon-ice-300 active:translate-y-1 active:translate-x-1 active:shadow-[2px_2px_0_0_var(--color-magenta-bloom-900)]"
+          >
+            <svg
+              className="h-5 w-5 md:h-6 md:w-6"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden
+            >
+              <path d="M3 21h4V10H3v11zm6 0h4V3H9v18zm6 0h4V14h-4v7z" />
+            </svg>
+            Top Shooters
+            <span className="pointer-events-none absolute -left-2 -top-2 flex h-5 w-5 items-center justify-center">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-yellow-green-400 opacity-75" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-yellow-green-400 border border-magenta-bloom-900" />
+            </span>
+          </motion.button>
+          <div className="mt-1.5 text-center text-[10px] md:text-xs font-black uppercase tracking-widest text-neon-ice-300">
+            See the board
+          </div>
+        </motion.div>
+
+        <motion.div
+          variants={sticker}
+          className="absolute right-2 -bottom-8 md:right-6 md:-bottom-6"
+        >
+          <motion.button
+            type="button"
+            onClick={() => setGameOpen(true)}
+            aria-label="Open mini hockey game"
+            animate={{
+              rotate: [0, 3, 0, 3, 0],
+              scale: [1, 1.06, 1, 1.06, 1],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 1.8,
+            }}
+            className="relative inline-flex cursor-pointer items-center gap-2 rounded-full border-4 border-magenta-bloom-900 bg-yellow-green-400 px-5 py-2 text-lg md:text-xl font-black uppercase tracking-tight text-magenta-bloom-900 shadow-[5px_5px_0_0_var(--color-magenta-bloom-900)] transition-transform hover:scale-110 hover:bg-yellow-green-300 active:translate-y-1 active:translate-x-1 active:shadow-[2px_2px_0_0_var(--color-magenta-bloom-900)]"
+          >
+            <svg
+              className="h-5 w-5 md:h-6 md:w-6"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden
+            >
+              <path d="M8 5v14l11-7z" />
+            </svg>
             Game On!
+            <span className="pointer-events-none absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-magenta-bloom-400 opacity-75" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-magenta-bloom-500 border border-magenta-bloom-900" />
+            </span>
+          </motion.button>
+          <div className="mt-1.5 text-center text-[10px] md:text-xs font-black uppercase tracking-widest text-yellow-green-300">
+            Tap to play
           </div>
         </motion.div>
       </motion.div>
+
+      <MiniHockeyModal open={gameOpen} onClose={() => setGameOpen(false)} />
+      <LeaderboardModal open={boardOpen} onClose={() => setBoardOpen(false)} />
     </section>
   );
 }
