@@ -211,7 +211,7 @@ const headerItem: Variants = {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { type: "spring", stiffness: 250, damping: 12 },
+    transition: { type: "spring", stiffness: 180, damping: 14 },
   },
 };
 
@@ -227,7 +227,7 @@ const discDrop: Variants = {
     y: 0,
     scale: 1,
     rotate: 0,
-    transition: { type: "spring", stiffness: 180, damping: 14 },
+    transition: { type: "spring", stiffness: 130, damping: 15 },
   },
 };
 
@@ -242,7 +242,7 @@ const modalVariant: Variants = {
     opacity: 1,
     scale: 1,
     y: 0,
-    transition: { type: "spring", stiffness: 240, damping: 18 },
+    transition: { type: "spring", stiffness: 170, damping: 18 },
   },
 };
 
@@ -256,7 +256,13 @@ function Banner({
   onSelect: () => void;
 }) {
   return (
-    <motion.div variants={discDrop} className="flex flex-col items-center">
+    <motion.div
+      variants={discDrop}
+      initial="hidden"
+      whileInView="shown"
+      viewport={{ once: false, amount: 0.35 }}
+      className="flex flex-col items-center"
+    >
       <motion.button
         type="button"
         onClick={onSelect}
@@ -569,13 +575,7 @@ export function TeamPicker() {
         </motion.p>
       </motion.div>
 
-      <motion.div
-        initial="hidden"
-        whileInView="shown"
-        viewport={{ once: false, amount: 0.15 }}
-        variants={gridContainer}
-        className="mx-auto grid max-w-5xl grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3"
-      >
+      <div className="mx-auto grid max-w-5xl grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
         {teams.map((t, i) => (
           <Banner
             key={t.id}
@@ -584,7 +584,7 @@ export function TeamPicker() {
             onSelect={() => setSelected(t)}
           />
         ))}
-      </motion.div>
+      </div>
 
       <AnimatePresence>
         {selected && (

@@ -180,13 +180,13 @@ const cardVariant: Variants = {
     y: 0,
     scale: 1,
     rotate: tilt,
-    transition: { type: "spring", stiffness: 200, damping: 14 },
+    transition: { type: "spring", stiffness: 140, damping: 16 },
   }),
 };
 
 const headlineWord: Variants = {
   hidden: { opacity: 0, y: 30, scale: 0.7 },
-  shown: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 260, damping: 12 } },
+  shown: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 180, damping: 14 } },
 };
 
 export function Legends() {
@@ -230,13 +230,7 @@ export function Legends() {
         </motion.p>
       </motion.div>
 
-      <motion.ul
-        initial="hidden"
-        whileInView="shown"
-        viewport={{ once: false, amount: 0.1 }}
-        variants={container}
-        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 md:gap-4 max-w-5xl mx-auto"
-      >
+      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 md:gap-4 max-w-5xl mx-auto">
         {players.map((p) => {
           const a = accentMap[p.accent];
           return (
@@ -244,6 +238,9 @@ export function Legends() {
               key={`${p.first}-${p.last}`}
               custom={p.tilt}
               variants={cardVariant}
+              initial="hidden"
+              whileInView="shown"
+              viewport={{ once: false, amount: 0.4 }}
               whileHover={{
                 rotate: 0,
                 scale: 1.04,
@@ -300,7 +297,7 @@ export function Legends() {
             </motion.li>
           );
         })}
-      </motion.ul>
+      </ul>
     </section>
   );
 }

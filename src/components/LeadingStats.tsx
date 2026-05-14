@@ -168,7 +168,7 @@ const cardVariant: Variants = {
     y: 0,
     scale: 1,
     rotate: tilt,
-    transition: { type: "spring", stiffness: 210, damping: 14 },
+    transition: { type: "spring", stiffness: 150, damping: 16 },
   }),
 };
 
@@ -177,13 +177,13 @@ const numberPop: Variants = {
   shown: {
     scale: 1,
     opacity: 1,
-    transition: { type: "spring", stiffness: 260, damping: 12, delay: 0.18 },
+    transition: { type: "spring", stiffness: 190, damping: 13, delay: 0.18 },
   },
 };
 
 const headlineWord: Variants = {
   hidden: { opacity: 0, y: 28, scale: 0.7 },
-  shown: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 250, damping: 12 } },
+  shown: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 180, damping: 14 } },
 };
 
 function StatIcon({ kind }: { kind: StatRecord["icon"] }) {
@@ -301,13 +301,7 @@ export function LeadingStats() {
         </motion.p>
       </motion.div>
 
-      <motion.ul
-        initial="hidden"
-        whileInView="shown"
-        viewport={{ once: false, amount: 0.1 }}
-        variants={container}
-        className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 md:gap-8 lg:gap-10 max-w-5xl mx-auto"
-      >
+      <ul className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 md:gap-8 lg:gap-10 max-w-5xl mx-auto">
         {records.map((r) => {
           const a = accentMap[r.accent];
           return (
@@ -315,6 +309,9 @@ export function LeadingStats() {
               key={r.category}
               custom={r.tilt}
               variants={cardVariant}
+              initial="hidden"
+              whileInView="shown"
+              viewport={{ once: false, amount: 0.4 }}
               whileHover={{
                 rotate: 0,
                 scale: 1.04,
@@ -360,7 +357,7 @@ export function LeadingStats() {
             </motion.li>
           );
         })}
-      </motion.ul>
+      </ul>
     </section>
   );
 }

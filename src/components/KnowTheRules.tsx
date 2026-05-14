@@ -52,7 +52,7 @@ const wordVariant: Variants = {
     y: 0,
     rotate: c.rotate,
     scale: 1,
-    transition: { type: "spring", stiffness: 240, damping: 11 },
+    transition: { type: "spring", stiffness: 170, damping: 12 },
   }),
 };
 
@@ -62,7 +62,7 @@ const sticker: Variants = {
     opacity: 1,
     scale: 1,
     rotate: -8,
-    transition: { type: "spring", stiffness: 260, damping: 10, delay: 1.2 },
+    transition: { type: "spring", stiffness: 190, damping: 11, delay: 1.2 },
   },
 };
 
@@ -72,7 +72,7 @@ const stickerLeft: Variants = {
     opacity: 1,
     scale: 1,
     rotate: 6,
-    transition: { type: "spring", stiffness: 260, damping: 10, delay: 1.35 },
+    transition: { type: "spring", stiffness: 190, damping: 11, delay: 1.35 },
   },
 };
 
@@ -82,7 +82,7 @@ const puck: Variants = {
     opacity: 1,
     y: 0,
     rotate: -420,
-    transition: { type: "spring", stiffness: 140, damping: 9, delay: 0.85 },
+    transition: { type: "spring", stiffness: 100, damping: 10, delay: 0.85 },
   },
 };
 
@@ -160,7 +160,7 @@ export function KnowTheRules() {
               opacity: 1,
             }}
             viewport={{ once: false, amount: 0.4 }}
-            transition={{ duration: 0.6, delay: s.delay, ease: "backOut" }}
+            transition={{ duration: 0.8, delay: s.delay, ease: "backOut" }}
           >
             <Sparkle color={s.color} size={s.size} />
           </motion.div>

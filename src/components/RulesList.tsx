@@ -129,7 +129,7 @@ const card: Variants = {
     y: 0,
     scale: 1,
     rotate: tilt,
-    transition: { type: "spring", stiffness: 220, damping: 14 },
+    transition: { type: "spring", stiffness: 150, damping: 16 },
   }),
 };
 
@@ -207,19 +207,13 @@ export function RulesList() {
         initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: false, amount: 0.6 }}
-        transition={{ duration: 0.45, ease: "easeOut" }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
         className="mx-auto mt-0 mb-3 max-w-xl text-center text-sm md:text-base font-semibold text-neon-ice-100/85"
       >
         Six things to know before you watch the games.
       </motion.p>
 
-      <motion.ul
-        initial="hidden"
-        whileInView="shown"
-        viewport={{ once: false, amount: 0.15 }}
-        variants={container}
-        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 md:gap-4"
-      >
+      <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 md:gap-4">
         {rules.map((r) => {
           const a = accentMap[r.accent];
           return (
@@ -227,6 +221,9 @@ export function RulesList() {
               key={r.num}
               custom={r.tilt}
               variants={card}
+              initial="hidden"
+              whileInView="shown"
+              viewport={{ once: false, amount: 0.4 }}
               whileHover={{
                 scale: 1.04,
                 rotate: 0,
@@ -260,7 +257,7 @@ export function RulesList() {
             </motion.li>
           );
         })}
-      </motion.ul>
+      </ul>
     </section>
   );
 }
