@@ -948,7 +948,7 @@ export function MiniHockeyModal({
 
           {finished && (
             <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-icy-blue-950/85 p-4 backdrop-blur-sm">
-              <div className="w-full max-w-md rounded-2xl border-4 border-yellow-green-400 bg-icy-blue-900 p-4 shadow-[0_10px_0_0_var(--color-magenta-bloom-900)]">
+              <div className="flex max-h-full w-full max-w-md flex-col rounded-2xl border-4 border-yellow-green-400 bg-icy-blue-900 p-4 shadow-[0_10px_0_0_var(--color-magenta-bloom-900)]">
                 <h3 className="text-center text-2xl md:text-3xl font-black uppercase tracking-tight text-yellow-green-300">
                   {score.goals === score.shots && score.shots >= ROUND_SHOTS
                     ? "Hat Trick!"
@@ -971,7 +971,7 @@ export function MiniHockeyModal({
                 <h4 className="mt-3 text-center text-xs font-bold uppercase tracking-widest text-lilac-300">
                   High Scores
                 </h4>
-                <ol className="mt-1 max-h-44 overflow-y-auto rounded-lg border border-magenta-bloom-700 bg-icy-blue-950/60 p-2 text-sm">
+                <ol className="mt-1 min-h-0 flex-1 overflow-y-auto rounded-lg border border-magenta-bloom-700 bg-icy-blue-950/60 p-2 text-sm">
                   {displayBoard.length === 0 && (
                     <li className="px-1 py-1 text-center text-lilac-300">
                       No scores yet — you&apos;re first!
@@ -1050,6 +1050,7 @@ export function MiniHockeyModal({
           )}
         </div>
 
+        {!finished && (
         <div className="mt-3 grid grid-cols-[1fr_2.2fr_1fr] gap-2 md:gap-3">
           <button
             type="button"
@@ -1112,7 +1113,9 @@ export function MiniHockeyModal({
             ▶
           </button>
         </div>
+        )}
 
+        {!finished && (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-neon-ice-100">
           <p className="hidden md:block text-sm">
             <span className="rounded bg-magenta-bloom-700 px-2 py-0.5 font-bold text-yellow-green-300">
@@ -1140,6 +1143,7 @@ export function MiniHockeyModal({
             </span>
           </p>
         </div>
+        )}
       </div>
     </div>
   );

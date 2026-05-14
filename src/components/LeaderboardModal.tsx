@@ -80,10 +80,10 @@ export function LeaderboardModal({
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-md rounded-3xl border-4 border-neon-ice-400 bg-icy-blue-950 p-5 shadow-[0_18px_0_0_var(--color-magenta-bloom-900)]"
+        className="relative flex max-h-[60vh] w-full max-w-md flex-col rounded-3xl border-4 border-neon-ice-400 bg-icy-blue-950 p-5 shadow-[0_18px_0_0_var(--color-magenta-bloom-900)]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="mb-4 flex shrink-0 items-center justify-between gap-3">
           <div>
             <span className="inline-block rounded-full border border-neon-ice-300 bg-neon-ice-400/10 px-2 py-0.5 text-[9px] md:text-[10px] font-bold uppercase tracking-widest text-neon-ice-300">
               Live scoreboard
@@ -129,7 +129,7 @@ export function LeaderboardModal({
         )}
 
         {scores.length > 0 && (
-          <ol className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
+          <ol className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
             {scores.map((e, i) => (
               <li
                 key={`${e.name}-${e.date}-${i}`}

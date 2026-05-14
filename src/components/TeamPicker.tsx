@@ -150,7 +150,7 @@ const teams: Team[] = [
     bigStatLabel: "McDavid & Draisaitl",
     description:
       "The two best players on Earth wear the same jersey. Connor McDavid and Leon Draisaitl are a one-two punch nobody can match.",
-    founded: 1972,
+    founded: 1971,
     cups: 5,
     arena: "Rogers Place",
     signatureFact:
