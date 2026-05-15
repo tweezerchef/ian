@@ -25,13 +25,61 @@ const ROUND_TIME_MS = 60000;
 const STORAGE_KEY = "ice-breakers-hockey-scores";
 const LEADERBOARD_SIZE = 10;
 const MAX_NAME = 12;
-const GOALIE_MAX_SPEED = 2.0;
 const GOALIE_HISTORY = 5;
 const GOALIE_LINE_Y = GOAL.y + 14;
 const GOALIE_BIAS_PULL = 0.3;
-const GOALIE_REACT_FRAMES = 22;
-const GOALIE_INTERCEPT_FUZZ = 22;
-const GOALIE_SHOT_ERROR = 28;
+
+export type Difficulty = "easy" | "medium" | "hard";
+
+type DifficultyConfig = {
+  label: string;
+  blurb: string;
+  multiplier: number;
+  goalieMaxSpeed: number;
+  reactFrames: number;
+  shotError: number;
+  interceptFuzz: number;
+};
+
+const DIFFICULTY: Record<Difficulty, DifficultyConfig> = {
+  easy: {
+    label: "Rookie",
+    blurb: "Slow goalie · big openings",
+    multiplier: 1,
+    goalieMaxSpeed: 1.35,
+    reactFrames: 12,
+    shotError: 46,
+    interceptFuzz: 36,
+  },
+  medium: {
+    label: "Pro",
+    blurb: "Standard challenge",
+    multiplier: 2,
+    goalieMaxSpeed: 2.0,
+    reactFrames: 22,
+    shotError: 28,
+    interceptFuzz: 22,
+  },
+  hard: {
+    label: "All-Star",
+    blurb: "Reads your aim · barely misses",
+    multiplier: 3,
+    goalieMaxSpeed: 2.85,
+    reactFrames: 34,
+    shotError: 12,
+    interceptFuzz: 10,
+  },
+};
+
+const DIFFICULTY_ORDER: Difficulty[] = ["easy", "medium", "hard"];
+
+function multiplierFor(d: Difficulty | undefined): number {
+  return DIFFICULTY[d ?? "medium"].multiplier;
+}
+
+function weightedScore(e: { goals: number; difficulty?: Difficulty }): number {
+  return e.goals * multiplierFor(e.difficulty);
+}
 
 type Puck = { x: number; y: number; vx: number; vy: number; active: boolean };
 type Entry = {
@@ -40,17 +88,29 @@ type Entry = {
   shots: number;
   time: number;
   date: string;
+  difficulty?: Difficulty;
 };
 
 function isValidEntry(v: unknown): v is Entry {
   if (!v || typeof v !== "object") return false;
   const e = v as Partial<Entry>;
-  return (
-    typeof e.name === "string" &&
-    typeof e.goals === "number" &&
-    typeof e.shots === "number" &&
-    typeof e.time === "number"
-  );
+  if (
+    typeof e.name !== "string" ||
+    typeof e.goals !== "number" ||
+    typeof e.shots !== "number" ||
+    typeof e.time !== "number"
+  ) {
+    return false;
+  }
+  if (
+    e.difficulty !== undefined &&
+    e.difficulty !== "easy" &&
+    e.difficulty !== "medium" &&
+    e.difficulty !== "hard"
+  ) {
+    return false;
+  }
+  return true;
 }
 
 function loadLocal(): Entry[] {
@@ -110,6 +170,9 @@ async function submitScore(entry: Entry): Promise<Entry[]> {
 }
 
 function compareEntries(a: Entry, b: Entry) {
+  const sa = weightedScore(a);
+  const sb = weightedScore(b);
+  if (sa !== sb) return sb - sa;
   if (a.goals !== b.goals) return b.goals - a.goals;
   if (a.shots !== b.shots) return a.shots - b.shots;
   return a.time - b.time;
@@ -392,10 +455,13 @@ export function MiniHockeyModal({
   const shotStartRef = useRef(0);
   const lastShotMsRef = useRef(0);
   const bestShotMsRef = useRef(0);
+  const difficultyRef = useRef<Difficulty>("medium");
 
   const fireShot = useCallback(() => {
     if (finishedRef.current || puckRef.current.active) return;
+    if (startTimeRef.current === 0) return;
     const a = aimRef.current;
+    const cfg = DIFFICULTY[difficultyRef.current];
     puckRef.current = {
       x: PLAYER.x,
       y: PLAYER.y - 16,
@@ -405,7 +471,7 @@ export function MiniHockeyModal({
     };
     shotStartRef.current = performance.now();
     goalieRef.current.shotError =
-      (Math.random() - 0.5) * 2 * GOALIE_SHOT_ERROR;
+      (Math.random() - 0.5) * 2 * cfg.shotError;
     setScore((s) => ({ ...s, shots: s.shots + 1 }));
   }, []);
 
@@ -414,6 +480,7 @@ export function MiniHockeyModal({
   const handlePointerAim = useCallback(
     (e: ReactPointerEvent<HTMLCanvasElement>) => {
       if (finishedRef.current) return;
+      if (startTimeRef.current === 0) return;
       if (e.pointerType === "mouse" && e.buttons === 0) return;
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -433,8 +500,14 @@ export function MiniHockeyModal({
   const [submitted, setSubmitted] = useState(false);
   const [nameInput, setNameInput] = useState("");
   const [highScores, setHighScores] = useState<Entry[]>([]);
+  const [difficulty, setDifficulty] = useState<Difficulty | null>(null);
 
-  const resetGame = useCallback(() => {
+  const refreshScores = useCallback(() => {
+    setHighScores(loadLocal());
+    fetchScores().then(setHighScores).catch(() => {});
+  }, []);
+
+  const resetGameState = useCallback(() => {
     aimRef.current = 0;
     puckRef.current = { x: 0, y: 0, vx: 0, vy: 0, active: false };
     goalieRef.current = {
@@ -443,7 +516,7 @@ export function MiniHockeyModal({
       shotError: 0,
     };
     flashRef.current = { kind: null, until: 0 };
-    startTimeRef.current = performance.now();
+    startTimeRef.current = 0;
     elapsedRef.current = 0;
     finishedRef.current = false;
     shotStartRef.current = 0;
@@ -453,13 +526,27 @@ export function MiniHockeyModal({
     setFinished(false);
     setSubmitted(false);
     setNameInput("");
-    setHighScores(loadLocal());
-    fetchScores().then(setHighScores).catch(() => {});
   }, []);
 
+  const startRound = useCallback(
+    (diff: Difficulty) => {
+      resetGameState();
+      difficultyRef.current = diff;
+      setDifficulty(diff);
+      startTimeRef.current = performance.now();
+    },
+    [resetGameState]
+  );
+
+  const goToPicker = useCallback(() => {
+    resetGameState();
+    setDifficulty(null);
+    refreshScores();
+  }, [resetGameState, refreshScores]);
+
   useEffect(() => {
-    if (open) resetGame();
-  }, [open, resetGame]);
+    if (open) goToPicker();
+  }, [open, goToPicker]);
 
   useEffect(() => {
     if (!open) return;
@@ -536,17 +623,18 @@ export function MiniHockeyModal({
 
       const goalie = goalieRef.current;
       const p = puckRef.current;
-      if (!isFinished) {
+      const cfg = DIFFICULTY[difficultyRef.current];
+      if (!isFinished && startTimeRef.current > 0) {
         const now = performance.now();
         let targetCenter: number;
         if (p.active && p.vy < 0) {
           const t = (p.y - GOALIE_LINE_Y) / -p.vy;
-          if (t > 0 && t < GOALIE_REACT_FRAMES) {
+          if (t > 0 && t < cfg.reactFrames) {
             targetCenter =
               p.x +
               p.vx * t +
               goalie.shotError +
-              Math.sin(now * 0.011) * GOALIE_INTERCEPT_FUZZ;
+              Math.sin(now * 0.011) * cfg.interceptFuzz;
           } else {
             targetCenter = idleTarget(goalie.history, now);
           }
@@ -558,12 +646,12 @@ export function MiniHockeyModal({
           Math.min(GOAL.x2 - 6 - GOALIE_W, targetCenter - GOALIE_W / 2)
         );
         const dx = targetX - goalie.x;
-        if (dx > GOALIE_MAX_SPEED) goalie.x += GOALIE_MAX_SPEED;
-        else if (dx < -GOALIE_MAX_SPEED) goalie.x -= GOALIE_MAX_SPEED;
+        if (dx > cfg.goalieMaxSpeed) goalie.x += cfg.goalieMaxSpeed;
+        else if (dx < -cfg.goalieMaxSpeed) goalie.x -= cfg.goalieMaxSpeed;
         else goalie.x = targetX;
       }
 
-      if (p.active && !isFinished) {
+      if (p.active && !isFinished && startTimeRef.current > 0) {
         p.x += p.vx;
         p.y += p.vy;
 
@@ -701,6 +789,11 @@ export function MiniHockeyModal({
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
+      if (startTimeRef.current === 0) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+
       const now2 = performance.now();
       const liveShotMs = p.active
         ? now2 - shotStartRef.current
@@ -760,6 +853,32 @@ export function MiniHockeyModal({
           50
         );
       }
+      ctx.restore();
+
+      const activeCfg = DIFFICULTY[difficultyRef.current];
+      ctx.save();
+      const dW = 124;
+      const dH = 38;
+      const dX = (W - dW) / 2;
+      const dY = 10;
+      ctx.fillStyle = "rgba(31, 5, 14, 0.82)";
+      ctx.strokeStyle = "#a5d629";
+      ctx.lineWidth = 2;
+      roundRect(dX, dY, dW, dH, 10);
+      ctx.fill();
+      ctx.stroke();
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      ctx.fillStyle = "#dbbdd0";
+      ctx.font = "900 9px sans-serif";
+      ctx.fillText("DIFFICULTY", dX + dW / 2, dY + 5);
+      ctx.fillStyle = "#a5d629";
+      ctx.font = "900 16px sans-serif";
+      ctx.fillText(
+        `${activeCfg.label.toUpperCase()}  ×${activeCfg.multiplier}`,
+        dX + dW / 2,
+        dY + 18
+      );
       ctx.restore();
 
       const tlPulse = lowTime
@@ -826,15 +945,16 @@ export function MiniHockeyModal({
   const remaining = Math.max(0, ROUND_SHOTS - score.shots);
 
   const myEntry: Entry | null = useMemo(() => {
-    if (!finished) return null;
+    if (!finished || !difficulty) return null;
     return {
       name: "",
       goals: score.goals,
       shots: score.shots,
       time: elapsedRef.current,
       date: "",
+      difficulty,
     };
-  }, [finished, score.goals, score.shots]);
+  }, [finished, score.goals, score.shots, difficulty]);
 
   const myRank = useMemo(() => {
     if (!myEntry) return -1;
@@ -853,13 +973,17 @@ export function MiniHockeyModal({
         shots: myEntry.shots,
         time: myEntry.time,
         date: "",
+        difficulty: difficulty ?? undefined,
         isMe: true,
         isPending: true,
       };
       rows.splice(myRank, 0, pending);
     }
     return rows.slice(0, LEADERBOARD_SIZE);
-  }, [highScores, qualifies, myEntry, myRank, nameInput]);
+  }, [highScores, qualifies, myEntry, myRank, nameInput, difficulty]);
+
+  const finalMultiplier = difficulty ? DIFFICULTY[difficulty].multiplier : 1;
+  const finalScore = score.goals * finalMultiplier;
 
   const [submitting, setSubmitting] = useState(false);
 
@@ -946,6 +1070,51 @@ export function MiniHockeyModal({
             </div>
           )}
 
+          {!difficulty && !finished && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-icy-blue-950/90 p-3 md:p-4 backdrop-blur-sm">
+              <div className="flex w-full max-w-md flex-col rounded-2xl border-4 border-magenta-bloom-500 bg-icy-blue-900 p-3 md:p-4 shadow-[0_10px_0_0_var(--color-magenta-bloom-900)]">
+                <h3 className="text-center text-xl md:text-2xl font-black uppercase tracking-tight text-yellow-green-300">
+                  Pick Your Level
+                </h3>
+                <p className="mt-1 text-center text-[11px] md:text-xs font-bold uppercase tracking-widest text-lilac-300">
+                  Harder goalie · bigger score multiplier
+                </p>
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {DIFFICULTY_ORDER.map((d) => {
+                    const cfg = DIFFICULTY[d];
+                    const tone =
+                      d === "easy"
+                        ? "bg-icy-blue-300 text-magenta-bloom-900 border-magenta-bloom-900"
+                        : d === "medium"
+                        ? "bg-yellow-green-400 text-magenta-bloom-900 border-magenta-bloom-900"
+                        : "bg-magenta-bloom-500 text-neon-ice-50 border-yellow-green-400";
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => startRound(d)}
+                        className={`flex flex-col items-center justify-center gap-1 rounded-2xl border-4 px-2 py-3 text-center shadow-[4px_4px_0_0_var(--color-magenta-bloom-900)] transition-transform hover:-translate-y-0.5 active:translate-y-0.5 active:shadow-[2px_2px_0_0_var(--color-magenta-bloom-900)] ${tone}`}
+                      >
+                        <span className="text-base md:text-lg font-black uppercase tracking-tight leading-none">
+                          {cfg.label}
+                        </span>
+                        <span className="text-[10px] md:text-[11px] font-bold uppercase tracking-widest opacity-80 leading-tight">
+                          {cfg.blurb}
+                        </span>
+                        <span className="mt-1 rounded-full border-2 border-current px-2 py-0.5 text-[10px] md:text-xs font-black uppercase tracking-widest">
+                          ×{cfg.multiplier} Score
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-3 text-center text-[10px] md:text-[11px] font-bold uppercase tracking-widest text-lilac-300">
+                  20 shots · 60 seconds · weighted leaderboard
+                </p>
+              </div>
+            </div>
+          )}
+
           {finished && (
             <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-icy-blue-950/85 p-4 backdrop-blur-sm">
               <div className="flex max-h-full w-full max-w-md flex-col rounded-2xl border-4 border-yellow-green-400 bg-icy-blue-900 p-4 shadow-[0_10px_0_0_var(--color-magenta-bloom-900)]">
@@ -967,6 +1136,19 @@ export function MiniHockeyModal({
                     {elapsedRef.current.toFixed(1)}s
                   </span>
                 </p>
+                {difficulty && (
+                  <p className="mt-1 text-center text-xs font-bold uppercase tracking-widest text-lilac-300">
+                    <span className="rounded-full border-2 border-yellow-green-400 bg-magenta-bloom-700 px-2 py-0.5 text-yellow-green-300">
+                      {DIFFICULTY[difficulty].label} ×{finalMultiplier}
+                    </span>
+                    <span className="ml-2">
+                      Score{" "}
+                      <span className="text-base font-black text-yellow-green-300">
+                        {finalScore}
+                      </span>
+                    </span>
+                  </p>
+                )}
 
                 <h4 className="mt-3 text-center text-xs font-bold uppercase tracking-widest text-lilac-300">
                   High Scores
@@ -977,32 +1159,46 @@ export function MiniHockeyModal({
                       No scores yet — you&apos;re first!
                     </li>
                   )}
-                  {displayBoard.map((row, i) => (
-                    <li
-                      key={i}
-                      className={`flex items-center justify-between gap-2 rounded px-2 py-1 ${
-                        row.isMe
-                          ? "bg-yellow-green-400 text-magenta-bloom-900"
-                          : "text-neon-ice-100"
-                      }`}
-                    >
-                      <span className="w-6 font-black">{i + 1}.</span>
-                      <span className="flex-1 truncate font-bold uppercase">
-                        {row.name}
-                        {row.isMe && (
-                          <span className="ml-2 rounded bg-magenta-bloom-700 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-yellow-green-300">
-                            You
-                          </span>
-                        )}
-                      </span>
-                      <span className="font-black">
-                        {row.goals}/{row.shots}
-                      </span>
-                      <span className="w-12 text-right text-xs opacity-80">
-                        {row.time.toFixed(1)}s
-                      </span>
-                    </li>
-                  ))}
+                  {displayBoard.map((row, i) => {
+                    const diff = row.difficulty ?? "medium";
+                    const cfg = DIFFICULTY[diff];
+                    return (
+                      <li
+                        key={i}
+                        className={`flex items-center justify-between gap-2 rounded px-2 py-1 ${
+                          row.isMe
+                            ? "bg-yellow-green-400 text-magenta-bloom-900"
+                            : "text-neon-ice-100"
+                        }`}
+                      >
+                        <span className="w-6 font-black">{i + 1}.</span>
+                        <span className="flex-1 truncate font-bold uppercase">
+                          {row.name}
+                          {row.isMe && (
+                            <span className="ml-2 rounded bg-magenta-bloom-700 px-1.5 py-0.5 text-[10px] font-black uppercase tracking-widest text-yellow-green-300">
+                              You
+                            </span>
+                          )}
+                        </span>
+                        <span
+                          className={`rounded px-1.5 py-0.5 text-[10px] font-black uppercase tracking-widest ${
+                            row.isMe
+                              ? "bg-magenta-bloom-900 text-yellow-green-300"
+                              : "bg-magenta-bloom-700 text-yellow-green-300"
+                          }`}
+                          title={`${cfg.label} (×${cfg.multiplier})`}
+                        >
+                          {cfg.label.slice(0, 3)}×{cfg.multiplier}
+                        </span>
+                        <span className="font-black tabular-nums">
+                          {row.goals * cfg.multiplier}
+                        </span>
+                        <span className="w-10 text-right text-xs opacity-80">
+                          {row.goals}/{row.shots}
+                        </span>
+                      </li>
+                    );
+                  })}
                 </ol>
 
                 {qualifies && (
@@ -1039,18 +1235,26 @@ export function MiniHockeyModal({
                   </p>
                 )}
 
-                <button
-                  onClick={resetGame}
-                  className="mt-3 w-full rounded-full border-4 border-magenta-bloom-900 bg-magenta-bloom-500 py-2 text-lg font-black uppercase tracking-tight text-neon-ice-50 shadow-[4px_4px_0_0_var(--color-magenta-bloom-900)] hover:bg-magenta-bloom-400 active:translate-y-0.5 active:shadow-[2px_2px_0_0_var(--color-magenta-bloom-900)]"
-                >
-                  Play Again
-                </button>
+                <div className="mt-3 grid grid-cols-[2fr_1fr] gap-2">
+                  <button
+                    onClick={() => difficulty && startRound(difficulty)}
+                    className="rounded-full border-4 border-magenta-bloom-900 bg-magenta-bloom-500 py-2 text-lg font-black uppercase tracking-tight text-neon-ice-50 shadow-[4px_4px_0_0_var(--color-magenta-bloom-900)] hover:bg-magenta-bloom-400 active:translate-y-0.5 active:shadow-[2px_2px_0_0_var(--color-magenta-bloom-900)]"
+                  >
+                    Play Again
+                  </button>
+                  <button
+                    onClick={goToPicker}
+                    className="rounded-full border-4 border-magenta-bloom-900 bg-icy-blue-300 py-2 text-xs md:text-sm font-black uppercase tracking-widest text-magenta-bloom-900 shadow-[4px_4px_0_0_var(--color-magenta-bloom-900)] hover:bg-icy-blue-200 active:translate-y-0.5 active:shadow-[2px_2px_0_0_var(--color-magenta-bloom-900)]"
+                  >
+                    Change Level
+                  </button>
+                </div>
               </div>
             </div>
           )}
         </div>
 
-        {!finished && (
+        {!finished && difficulty && (
         <div className="mt-3 grid grid-cols-[1fr_2.2fr_1fr] gap-2 md:gap-3">
           <button
             type="button"
@@ -1115,7 +1319,7 @@ export function MiniHockeyModal({
         </div>
         )}
 
-        {!finished && (
+        {!finished && difficulty && (
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-neon-ice-100">
           <p className="hidden md:block text-sm">
             <span className="rounded bg-magenta-bloom-700 px-2 py-0.5 font-bold text-yellow-green-300">

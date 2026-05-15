@@ -2,12 +2,39 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+type Difficulty = "easy" | "medium" | "hard";
+
 type Entry = {
   name: string;
   goals: number;
   shots: number;
   time: number;
   date: string;
+  difficulty?: Difficulty;
+};
+
+const DIFFICULTY_META: Record<
+  Difficulty,
+  { label: string; short: string; multiplier: number; chip: string }
+> = {
+  easy: {
+    label: "Rookie",
+    short: "Rkie",
+    multiplier: 1,
+    chip: "bg-icy-blue-300 text-magenta-bloom-900 border-magenta-bloom-900",
+  },
+  medium: {
+    label: "Pro",
+    short: "Pro",
+    multiplier: 2,
+    chip: "bg-yellow-green-400 text-magenta-bloom-900 border-magenta-bloom-900",
+  },
+  hard: {
+    label: "All-Star",
+    short: "All",
+    multiplier: 3,
+    chip: "bg-magenta-bloom-500 text-neon-ice-50 border-yellow-green-400",
+  },
 };
 
 async function fetchScores(): Promise<Entry[]> {
@@ -130,28 +157,41 @@ export function LeaderboardModal({
 
         {scores.length > 0 && (
           <ol className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-            {scores.map((e, i) => (
-              <li
-                key={`${e.name}-${e.date}-${i}`}
-                className={`flex items-center gap-3 rounded-xl border-4 px-3 py-2 ${rowStyle(
-                  i
-                )}`}
-              >
-                <span className="w-12 shrink-0 font-black uppercase tracking-tight text-sm md:text-base">
-                  {rankLabel(i)}
-                </span>
-                <span className="flex-1 truncate font-black uppercase tracking-tight text-base md:text-lg">
-                  {e.name}
-                </span>
-                <span className="shrink-0 text-right font-black uppercase tracking-tight">
-                  <span className="text-xl md:text-2xl">{e.goals}</span>
-                  <span className="opacity-70">/{e.shots}</span>
-                </span>
-                <span className="w-14 shrink-0 text-right text-xs md:text-sm font-bold opacity-80">
-                  {e.time.toFixed(1)}s
-                </span>
-              </li>
-            ))}
+            {scores.map((e, i) => {
+              const diff = e.difficulty ?? "medium";
+              const meta = DIFFICULTY_META[diff];
+              const total = e.goals * meta.multiplier;
+              return (
+                <li
+                  key={`${e.name}-${e.date}-${i}`}
+                  className={`flex items-center gap-2 rounded-xl border-4 px-3 py-2 ${rowStyle(
+                    i
+                  )}`}
+                >
+                  <span className="w-10 shrink-0 font-black uppercase tracking-tight text-sm md:text-base">
+                    {rankLabel(i)}
+                  </span>
+                  <span className="flex-1 truncate font-black uppercase tracking-tight text-base md:text-lg">
+                    {e.name}
+                  </span>
+                  <span
+                    className={`shrink-0 rounded-full border-2 px-1.5 py-0.5 text-[9px] md:text-[10px] font-black uppercase tracking-widest ${meta.chip}`}
+                    title={`${meta.label} (×${meta.multiplier})`}
+                  >
+                    {meta.short}×{meta.multiplier}
+                  </span>
+                  <span className="shrink-0 text-right font-black uppercase tracking-tight tabular-nums">
+                    <span className="text-lg md:text-2xl">{total}</span>
+                    <span className="ml-1 text-[10px] opacity-70">
+                      {e.goals}/{e.shots}
+                    </span>
+                  </span>
+                  <span className="w-12 shrink-0 text-right text-xs md:text-sm font-bold opacity-80">
+                    {e.time.toFixed(1)}s
+                  </span>
+                </li>
+              );
+            })}
           </ol>
         )}
       </div>

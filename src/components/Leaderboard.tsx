@@ -3,12 +3,39 @@
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "motion/react";
 
+type Difficulty = "easy" | "medium" | "hard";
+
 type Entry = {
   name: string;
   goals: number;
   shots: number;
   time: number;
   date: string;
+  difficulty?: Difficulty;
+};
+
+const DIFFICULTY_META: Record<
+  Difficulty,
+  { label: string; short: string; multiplier: number; chip: string }
+> = {
+  easy: {
+    label: "Rookie",
+    short: "Rkie",
+    multiplier: 1,
+    chip: "bg-icy-blue-300 text-magenta-bloom-900 border-magenta-bloom-900",
+  },
+  medium: {
+    label: "Pro",
+    short: "Pro",
+    multiplier: 2,
+    chip: "bg-yellow-green-400 text-magenta-bloom-900 border-magenta-bloom-900",
+  },
+  hard: {
+    label: "All-Star",
+    short: "All",
+    multiplier: 3,
+    chip: "bg-magenta-bloom-500 text-neon-ice-50 border-yellow-green-400",
+  },
 };
 
 async function fetchScores(): Promise<Entry[]> {
@@ -115,37 +142,56 @@ export function Leaderboard() {
 
         {scores.length > 0 && (
           <ol className="space-y-2">
-            {scores.map((e, i) => (
-              <motion.li
-                key={`${e.name}-${e.date}-${i}`}
-                initial={{ opacity: 0, x: -24 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, amount: 0.2 }}
-                transition={{
-                  delay: i * 0.05,
-                  type: "spring",
-                  stiffness: 240,
-                  damping: 18,
-                }}
-                className={`flex items-center gap-3 rounded-2xl border-4 px-4 py-3 ${rowStyle(
-                  i
-                )}`}
-              >
-                <span className="w-14 shrink-0 font-black uppercase tracking-tight text-base md:text-lg">
-                  {rankLabel(i)}
-                </span>
-                <span className="flex-1 truncate text-lg md:text-2xl font-black uppercase tracking-tight">
-                  {e.name}
-                </span>
-                <span className="shrink-0 text-right font-black uppercase tracking-tight">
-                  <span className="text-2xl md:text-3xl">{e.goals}</span>
-                  <span className="opacity-70">/{e.shots}</span>
-                </span>
-                <span className="w-16 shrink-0 text-right text-sm md:text-base font-bold opacity-80">
-                  {e.time.toFixed(1)}s
-                </span>
-              </motion.li>
-            ))}
+            {scores.map((e, i) => {
+              const diff = e.difficulty ?? "medium";
+              const meta = DIFFICULTY_META[diff];
+              const total = e.goals * meta.multiplier;
+              return (
+                <motion.li
+                  key={`${e.name}-${e.date}-${i}`}
+                  initial={{ opacity: 0, x: -24 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true, amount: 0.2 }}
+                  transition={{
+                    delay: i * 0.05,
+                    type: "spring",
+                    stiffness: 240,
+                    damping: 18,
+                  }}
+                  className={`flex items-center gap-3 rounded-2xl border-4 px-4 py-3 ${rowStyle(
+                    i
+                  )}`}
+                >
+                  <span className="w-14 shrink-0 font-black uppercase tracking-tight text-base md:text-lg">
+                    {rankLabel(i)}
+                  </span>
+                  <span className="flex-1 truncate text-lg md:text-2xl font-black uppercase tracking-tight">
+                    {e.name}
+                  </span>
+                  <span
+                    className={`hidden md:inline-flex shrink-0 items-center rounded-full border-2 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest ${meta.chip}`}
+                    title={`${meta.label} (×${meta.multiplier})`}
+                  >
+                    {meta.label} ×{meta.multiplier}
+                  </span>
+                  <span
+                    className={`md:hidden shrink-0 rounded-full border-2 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest ${meta.chip}`}
+                    title={`${meta.label} (×${meta.multiplier})`}
+                  >
+                    {meta.short}×{meta.multiplier}
+                  </span>
+                  <span className="shrink-0 text-right font-black uppercase tracking-tight tabular-nums">
+                    <span className="text-2xl md:text-3xl">{total}</span>
+                    <span className="ml-1 text-xs opacity-70">
+                      {e.goals}/{e.shots}
+                    </span>
+                  </span>
+                  <span className="w-12 shrink-0 text-right text-sm md:text-base font-bold opacity-80">
+                    {e.time.toFixed(1)}s
+                  </span>
+                </motion.li>
+              );
+            })}
           </ol>
         )}
       </div>

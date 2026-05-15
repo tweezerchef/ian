@@ -8,12 +8,21 @@ const KEY = "hockey:leaderboard";
 const LEADERBOARD_SIZE = 10;
 const MAX_NAME = 12;
 
+type Difficulty = "easy" | "medium" | "hard";
+
+const MULTIPLIER: Record<Difficulty, number> = {
+  easy: 1,
+  medium: 2,
+  hard: 3,
+};
+
 type Entry = {
   name: string;
   goals: number;
   shots: number;
   time: number;
   date: string;
+  difficulty?: Difficulty;
 };
 
 const redis = new Redis({
@@ -21,7 +30,14 @@ const redis = new Redis({
   token: process.env.KV_REST_API_TOKEN!,
 });
 
+function multiplier(d: Difficulty | undefined): number {
+  return MULTIPLIER[d ?? "medium"];
+}
+
 function compare(a: Entry, b: Entry) {
+  const sa = a.goals * multiplier(a.difficulty);
+  const sb = b.goals * multiplier(b.difficulty);
+  if (sa !== sb) return sb - sa;
   if (a.goals !== b.goals) return b.goals - a.goals;
   if (a.shots !== b.shots) return a.shots - b.shots;
   return a.time - b.time;
@@ -30,13 +46,24 @@ function compare(a: Entry, b: Entry) {
 function isValidEntry(v: unknown): v is Entry {
   if (!v || typeof v !== "object") return false;
   const e = v as Partial<Entry>;
-  return (
-    typeof e.name === "string" &&
-    typeof e.goals === "number" &&
-    typeof e.shots === "number" &&
-    typeof e.time === "number" &&
-    typeof e.date === "string"
-  );
+  if (
+    typeof e.name !== "string" ||
+    typeof e.goals !== "number" ||
+    typeof e.shots !== "number" ||
+    typeof e.time !== "number" ||
+    typeof e.date !== "string"
+  ) {
+    return false;
+  }
+  if (
+    e.difficulty !== undefined &&
+    e.difficulty !== "easy" &&
+    e.difficulty !== "medium" &&
+    e.difficulty !== "hard"
+  ) {
+    return false;
+  }
+  return true;
 }
 
 async function readBoard(): Promise<Entry[]> {
@@ -83,12 +110,21 @@ export async function POST(req: Request) {
       rawName.trim().slice(0, MAX_NAME).toUpperCase().replace(/[^A-Z0-9 _-]/g, "") ||
       "ANON";
 
+    const rawDifficulty = body.difficulty;
+    const difficulty: Difficulty =
+      rawDifficulty === "easy" ||
+      rawDifficulty === "medium" ||
+      rawDifficulty === "hard"
+        ? rawDifficulty
+        : "medium";
+
     const entry: Entry = {
       name,
       goals,
       shots,
       time,
       date: new Date().toISOString(),
+      difficulty,
     };
 
     const board = await readBoard();
